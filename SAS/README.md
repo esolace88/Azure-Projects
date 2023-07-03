@@ -4,7 +4,7 @@ Welcome to the Azure Shared Access Signature (SAS) project! This is a simple pro
 
 ## Getting Started
 
-To get started, you will need an Azure account. In this demo i've configured SAS via CLI, it can also be deployed via GUI with the Container page.
+To get started, you will need an Azure account with a pre-created storage account, container, and image within the container. In this demo i've configured SAS via CLI, it can also be deployed via GUI with the Container page.
 
 -------------
 
