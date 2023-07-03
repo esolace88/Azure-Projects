@@ -13,7 +13,7 @@ To get started, you will need an Azure account with CLI access to initiate Terra
 1. Either Upload or copy & paste the terraform file into your Azure Home Directory
 
 2. Modify the terraform file
-	- replace all entries of <Enter-Your-ResourceGName with your Resource-Group
+	- Replace all entries of <Enter-Your-ResourceGName with your Resource-Group
 		- To determine your first resource group enter the following
       ```bash
         az group list --query "[0].name" -o tsv     
@@ -22,7 +22,7 @@ To get started, you will need an Azure account with CLI access to initiate Terra
       ```bash
         sed -i -e 's/<Enter-Your-ResourceGName/<Paste>/' './test.tf'     
       ```
-	- replace the following entry <Enter-A-Unique-Name with a unique name, use the following cmd:
+	- Replace the following entry <Enter-A-Unique-Name with a unique name, use the following cmd:
      ```bash
         sed -i -e 's/<Enter-A-Unique-Name/<Enter Name>/' './test.tf'     
      ```
