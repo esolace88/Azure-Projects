@@ -31,9 +31,6 @@ These projects require an active Azure account and a basic understanding of Azur
 
 Contributions, bug reports, and improvements are welcomed. Feel free to open an issue or create a pull request if you want to contribute.
 
-## License
-
-All projects in this repository are released under the MIT license. For more details, see the LICENSE file.
 
 ## Contact
 
