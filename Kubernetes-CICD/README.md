@@ -230,11 +230,12 @@ Please Continue if you would like to implement further options to improve this C
 
 2. Auto Scaling (Horizantol)
 
-   a. On the Control Server, Copy the metric yml file:
+	a. On the Control Server, Copy the metric yml file:
 		```bash
 		curl -LO https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 		```
-   b. Modify the component and add hostNetwork: true & kubelet-insecure-tls, **Under Spec**
+
+	b. Modify the component and add hostNetwork: true & kubelet-insecure-tls, **Under Spec**
 		```bash
 		kubectl apply -f components.yaml
 		```
