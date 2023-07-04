@@ -203,8 +203,9 @@ Please Continue if you would like to implement further options to improve this C
 		```bash
 		kubectl exec <Enter Pod Name> -- pkill
 		```
-*	-- If you run-run "kubectl get pods" you should see the restart count go up. This is due to Kubernetes' self-healing option. 
+*	-- If you run-run "kubectl get pods" you should see the restart count go up. This is due to Kubernetes' self-healing option.
 
+  
 **Liveness Probs**: Allows Kubernetes to fix pod before serious issues arise
 *	-- First Manually download the Repo onto your Control Server
 *	-- Then run: 
@@ -228,7 +229,7 @@ Please Continue if you would like to implement further options to improve this C
 *	-- You should see the pods have Auto-Restarted
 
 2. Auto Scaling (Horizantol)
-	a. On the Control Server, Copy the metric yml file:
+   	a. On the Control Server, Copy the metric yml file:
 		```bash
 		curl -LO https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 		```
