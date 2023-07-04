@@ -1,6 +1,6 @@
 # Kubernetes CI/CD Projects
 
-Welcome to my Kubernetes CI/CD Project! This project's focus is to build a full CI/CD environment leveraging Jenkins and Kubernetes to automate deployments. 
+Welcome to my Kubernetes CI/CD Project! This project's focus is to build a full CI/CD environment leveraging Jenkins and Kubernetes to automate deployments. In this Directory, you will see a step-by-step process on how to configure your environment. However, we will be using the following repo for actual code, to simplify code execution. [git@github.com:esolace88/AzureProjects-Kubernetes-CICD.git](https://github.com/esolace88/AzureProjects-Kubernetes-CICD.git)
 
 ## Getting Started
 
