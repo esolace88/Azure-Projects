@@ -194,6 +194,7 @@ Please Continue if you would like to implement further options to improve this C
 **Features and Options Check**
 
 1. Self-Healing Kubernetes Pods
+   
 **Manual Testing**
 *	-- On the Control Server:
 		```bash
