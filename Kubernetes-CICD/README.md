@@ -102,7 +102,7 @@ The additional options that I will be covering are the following:
 	```bash
 	kubectl get nodes -w
 	```
-8. After running the cmd on the Node, return to the control server and wait for node to show ready. 
+8. After running the cmd on the Node, return to the control server and wait for the node to show ready. 
 
 **On Node Server**
 
@@ -146,93 +146,92 @@ The additional options that I will be covering are the following:
 *	Description: Enter a Description
 **Ensure you Select "Manage hooks"**
 
-	To Create Secret Key (Personal Access Tokens)
-*		Github > Account "Settings" > Developer Settings > Personal Access Tokens > Generate New Token (Classic)
-*			-- Name the Token
-*			-- Select "admin:repo_hook"
-*				-- Generate token
+	To Create a Secret Key (Personal Access Tokens)
+*	Github > Account "Settings" > Developer Settings > Personal Access Tokens > Generate New Token (Classic)
+*	-- Name the Token
+*	-- Select "admin:repo_hook"
+*	-- Generate token
 
 
 **Under the Jenkins Credentials Page, Manage Jenkins > Credentials**
 
 8. Create Credentials for your Control Server and Docker Account
 *	Manage Jenkins > Credentials > (global) > Add Credentials
-*		-- Kind: Username with password
-*		-- Username: enter a username
-*		-- Password: enter the password
-*		-- ID: webserver_login | docker_hub_login
+*	-- Kind: Username with password
+*	-- Username: enter a username
+*	-- Password: enter the password
+*	-- ID: webserver_login | docker_hub_login
 
 **Deployment Testing**
 **Under the Jenkins Item Page, Dashboard > New Item**
 
 9. Create Jenkins Job
-	Dashboard > New Item 
-		-- Enter an Item Name
-		-- Select Multibranch Pipeline
-
-	Job Configuration
-		-- Display Name: Enter Name
-		-- Branch Source: GitHub
-		-- Repository HTTPS: Paste HTTPS Repo URL
-			-- Save
+*	Dashboard > New Item 
+*	-- Enter an Item Name
+*	-- Select Multibranch Pipeline
+*	Job Configuration
+*	-- Display Name: Enter Name
+*	-- Branch Source: GitHub
+*	-- Repository HTTPS: Paste HTTPS Repo URL
+*	-- Save
 
 10. Run the Job
-	Scroll to the bottom of the page, in the Build Executor Status:
-		-- Select ">> master"
-		-- Wait and Watch the progess of your intial job running
+*	Scroll to the bottom of the page, in the Build Executor Status:
+*	-- Select ">> master"
+*	-- Wait and Watch the progress of your initial job running
 
-11. Once Job Successfuly deploys, go to the Control Server to and run
+11. Once Job successfully deploys, go to the Control Server to run
 	```bash
 	kubectl get pods
 	```
 12. Then open a browser to Node Public IP
 
 **Congradulaiton** 
-	If you were able to complete the steps above then you've succefully completed a CI/CD pipline. With the configuations above anytime commits are published to your GitHub Repo - Jenkins will automate the deployment. 
+	If you were able to complete the steps above then you've successfully completed a CI/CD pipeline. With the configurations above anytime commits are published to your GitHub Repo - Jenkins will automate the deployment. 
 
-	Please Continue if you would like to implement futher options to improve this CI/CD deployment. Note: below shows how to implete and test said option. To fully incorporate it into your CI/CD deployment ensure your docker and yml files are configured accordingly. 
+Please Continue if you would like to implement further options to improve this CI/CD deployment. Note: below shows how to complete and test said option. To fully incorporate it into your CI/CD deployment ensure your docker and yml files are configured accordingly. 
 
 **Features and Options Check**
 
-1. Self Healing Kubernetes Pods
+1. Self-Healing Kubernetes Pods
 	a. Manual Testing
-		-- On the Control Server:
-			```bash
-			kubectl get pods
-			```	
-			```bash
-			kubectl exec <Enter Pod Name> -- pkill
-			```
-		-- If you run-run "kubectl get pods" you should see the restart count go up. This is due Kubernetes self healing option. 
+*	-- On the Control Server:
+		```bash
+		kubectl get pods
+		```	
+		```bash
+		kubectl exec <Enter Pod Name> -- pkill
+		```
+*	-- If you run-run "kubectl get pods" you should see the restart count go up. This is due to Kubernetes' self-healing option. 
 
-	b. Liveness Probs, Allows Kubernetes to fix pod before serious issues arrise.
-		-- First Manually download the Repo on to your Control Server
-		-- Then run: 
+	b. Liveness Probs, Allows Kubernetes to fix pod before serious issues arise.
+*	-- First Manually download the Repo onto your Control Server
+*	-- Then run: 
 		```bash
 		kubectl apply -f self-healing-option.yml
 		```
-		-- Wait for Deployement to complete 
+*	-- Wait for Deployment to complete 
 		```bash
 		kubectl get pods -w
 		```
-		-- Test the Liveness Prob
-			-- Open Browser to Node Public IP on Port 8080 / break
-			```bash
-			http://PublicIP:8080/break
-			```
-			-- Wait a few second then delete "/break"
-			-- Then go back to the Control Server and run:  
-					```bash
-					kubectl get pods -w
-					```
-			-- You should see the pods have Auto-Restarted
+*	-- Test the Liveness Prob
+*	-- Open Browser to Node Public IP on Port 8080 / break
+		```bash
+		http://PublicIP:8080/break
+		```
+*	-- Wait a few seconds then delete "/break"
+*	-- Then go back to the Control Server and run:  
+		```bash
+		kubectl get pods -w
+		```
+*	-- You should see the pods have Auto-Restarted
 
 2. Auto Scaling (Horizantol)
 	a. On the Control Server, Copy the metric yml file:
 		```bash
 		curl -LO https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 		```
-	b. Modify the component and add hostNetowrk: true & kubelet-insecure-tls, **Under Spec**
+	b. Modify the component and add hostNetwork: true & kubelet-insecure-tls, **Under Spec**
 		```bash
 		kubectl apply -f components.yaml
 		```
@@ -244,22 +243,22 @@ The additional options that I will be covering are the following:
 		```bash
 		kubectl apply -f autoscaling-option.yml
 		```
-	e. Test Scaling, Must open two ssh session to run cmds and see results. 
-		-- Session 1:
-			-- Run The following:
+	e. Test Scaling, Must open two ssh sessions to run cmd and see results. 
+*	-- Session 1:
+*	-- Run The following:
 			```bash
 			kubectl run -i --tty load-generator --image=busybox /bin/sh
 			```
-			**Note Enter you private IP of the Node**
+	**Note Enter you private IP of the Node**
 			```bash
 			while true; do wget -q -O- http://<kubernetes node private ip>:8080/generate-cpu-load; done
 			```
-		-- Session 2: 
-			-- Run The following: 
+*	-- Session 2: 
+*	-- Run The following: 
 			```bash
 			kubectl get hpa -w
 			```
-			**After awhile you should see the number of replicas increase. Once you terminate the busy box in session 1, Kubenetes will reduce the number of replicas.**
+**After a while you should see the number of replicas increase. Once you terminate the busy box in session 1, Kubernetes will reduce the number of replicas.**
 
 
 
