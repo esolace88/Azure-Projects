@@ -2,6 +2,8 @@
 
 Welcome to my Kubernetes CI/CD Project! This project's focus is to build a full CI/CD environment leveraging Jenkins and Kubernetes to automate deployments. In this Directory, you will see a step-by-step process on how to configure your environment. However, we will be using the following repo for actual code, to simplify code execution. [GitHub Repo](https://github.com/esolace88/AzureProjects-Kubernetes-CICD.git)
 
+**To view a quick demo of the completed product see the vide in the DEMO folder**
+
 ## Getting Started
 
 To get started, you will need a GitHub account, Docker Account, and Azure account. In this demo, we will be rapidly deploying applications via Jenkins, Docker, and Kubernetes. 
