@@ -1,39 +1,270 @@
-# Azure Projects
+# Kubernetes CI/CD Projects
 
-Welcome to my Azure Projects repository! This repository is a collection of practical projects showcasing the use of various Microsoft Azure services. The primary goal is to provide hands-on examples for deploying, managing, and working with applications in the Azure cloud environment.
-
-## Repository Contents
-
-At present, this repository focuses on two key areas of Azure:
-
-1. **Azure SAS:** This section provides examples of working with Azure's SAS (Shared Access Signatures). SAS is a powerful feature in Azure for granting limited access to objects in your storage account to other clients, without exposing your account key. By using SAS, you can grant clients access to resources in your storage account, without sharing your account keys.
-
-2. **Terraform:** This part is dedicated to projects utilizing Terraform with Azure. Terraform is a popular open-source Infrastructure as Code (IaC) tool that provides a consistent CLI workflow for managing cloud service. It's used for creating, managing, and updating infrastructure resources such as virtual machines, network switches, containers, and more.
-
-Each project resides in its respective folder and includes a detailed README file explaining the specifics of the project, including the problem statement, approach, and results.
+Welcome to my Kubernetes CI/CD Project! This projects' focuse is to build a full CI/CD enviroment leveraging Jenkins and Kubeneste to automate deployments. 
 
 ## Getting Started
 
-To explore these projects, you need to clone this repository to your local machine. Here's how to do that:
+To get started, you will need a GitHub account, Docker Account, and Azure account. In this demo we will be rapidly be deploying applications via Jenkins, Docker, and Kubernetes. 
 
+**Note:** I've while this project was created in a Azure enviroment. It can easily be replicated in a AWS, simple update the cloud-init files to conform to AWS standars. 
+
+-------------
+
+## INFO 
+The Enviroment utilzed in this project is as follows: 
+
+	-- Servers Type: Ubuntu 20.04 Focal Fossa LTS
+	-- K8s Network Engine: Calico
+
+	-- Source Control Management: GitHub
+	-- Build Automation: Gradle
+	-- Continuous Integration (CI): Jenkins w/ Webhooks
+	-- Continous Delivery (CD): Jekins /w Pipelines
+	-- Containers: Docker
+	-- Orchestration: Kubernetes
+
+The additional Options that I will be covering are the following:
+
+	-- Self-Healing
+	-- Auto Scaling
+
+## Step by Step 
+
+**Instance Creation**
+
+1. Login into Azure
+2. Open Azure Terminal
+3. Create Jenkins and Kube init files
+4. Create "Resource-Group" Variable
+      ```bash
+           $RG = az group list --query "[0].name" -o tsv
+      ```
+5. Create 3 VM instance, 1-Jenkins Server & 2-Kube Servers (Control & Node). **Note** in the cmd below ensure you replace the fields with your password and file name. 
+      ```bash
+           az vm create --resource-group $RG --name [VM-Jenkins|VM-Control|VM-Node] `
+           --image Canonical:0001-com-ubuntu-server-focal:20_04-lts:latest `
+           --size Standard_D2s_v3 --admin-username cloud-user `
+           --admin-password <enterpass> --public-ip-sku Standard `
+           --custom-data <enter-init-filename>
+      ```
+6. Open Ports for Jenkins Server && Node Server
+      ```bash
+       az vm open-port --port 8080 --priority 900 --resource-group $RG --name VM-Jenkins | VM-Node
+      ```
+7. List IP & Wait patiently (5-10min) for instance to deploy && Check /var/log/cloud-init-output.log deployment status. 
+	```bash
+	az vm list-ip-addresses -o table
+	```
+
+**Kubernestes Configuration**
+
+**On All Server ENABLE the Services**
 ```bash
-git clone https://github.com/esolace88/Azure-Projects.git
-cd Azure-Projects
+	sudo systemctl enable [jenkins | docker]
 ```
 
-After cloning, navigate to the individual project folder and follow the specific setup instructions detailed in each project's README file.
+**On Control Server**
+1. Add Current User to Docker group or Create a Deployment User and restart docker service
+	```bash
+	sudo usermod -aG docker $USER
+	sudo systemctl restart docker
+	```
+2. On the server designated as Control, create a kube-config.yml file. **Note Delete kube-config.yml file once applied**
+      ```bash
+    	apiVersion: kubeadm.k8s.io/v1beta3
+		kind: ClusterConfiguration
+		networking:
+  		  podSubnet: "10.244.0.0/24"
+		kubernetesVersion: "v1.24.0"
+		apiServer:
+  		  extraArgs:
+    	    service-node-port-range: 8000-31274
+      ```
+3. Intiate the Kubeadm
+	```bash
+	sudo kubeadm init --config kube-config.yml
+	```
+4. Make Kube Working Directory
+	```bash
+	mkdir -p $HOME/.kube
+	sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+	sudo chown $(id -u):$(id -g) $HOME/.kube/config
+	```
+5. Apply Network Add-On (Calico is used in)
+	```bash
+	kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml
+	```
+6. Print Kubeadm Token to Join Node, Copy CMD and Paste into Node:
+	```bash
+	kubeadm token create --print-join-command
+	```
+7. Before leaving run the following cmd to watch for results
+	```bash
+	kubectl get nodes -w
+	```
+8. After running the cmd on the Node, return to the control server and wait for node to show ready. 
 
-## Prerequisites
+**On Node Server**
 
-These projects require an active Azure account and a basic understanding of Azure services. Depending on the project, you may also need to install the Azure CLI, Terraform, and configure them with your Azure account details. Detailed prerequisites and setup instructions are provided within each project's folder.
+1. Paste the Kubeadm Join cmd with Sudo
+	```bash
+	sudo kubeadm join....
+	```
 
-## Contributions
+**Jenkins Configuration**
 
-Contributions, bug reports, and improvements are welcomed. Feel free to open an issue or create a pull request if you want to contribute.
+1. Add Jenkins user to Docker group and restart both docker and jenkins
+	```bash
+	sudo usermod -aG docker jenkins
+	sudo systemctl restart docker && sudo systemctl restart jenkins
+	```
+2. Open a Browser to the servers public ip on port 8080, ex (http:public.ip:8080)
+3. Navigate to the inital password location and paste it within the browser
+	```bash
+	sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+	```
+3. Select "Install suggested plugins"
+4. Create the Admin User for the Jenkins Server
+5. Install Docker Pipeline Plug-in
+	
+	Manage Jenkins > Plugins > Available Plugins > Docker Pipeline > Install without restart
+
+**Under the Jenkins System Page, Manage Jenkins > System**
+
+6. Input VM-Control Server Public IP and Jenkins "Name" variable
+	Manage Jenkins > System > Global Properties > Environment variables 
+		--Name: prod_ip
+		--Value: public IP
+
+7. Add GitHub Server & Secret Key, Add and Select Newly created Key
+	Mange Jenkins > System > GitHub Server
+		Name: GitHub
+		Credetials: Add > Jenkins 
+			Kind: Secret Text
+			Secret: Paste GitHub Token
+			ID: github_key
+			Description: Enter a Description
+		**Ensure you Select "Manage hooks"**
+
+	To Create Secrect Key (Personal Access Tokens)
+		Github > Account "Settings" > Developer Settings > Personal Access Tokens > Generate New Token (Classic)
+			-- Name the Token
+			-- Select "admin:repo_hook"
+				-- Generate token
+				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
+
+**Under the Jenkins Credentials Page, Manage Jenkins > Credentials**
+
+8. Create Credentials for your Control Server and Docker Account
+	Manage Jenkins > Cendentials > (global) > Add Credentials
+		-- Kind: Username with password
+		-- Username: enter username
+		-- Password: enter password
+		-- ID: webserver_login | docker_hub_login
+
+**Deployment Testing**
+**Under the Jenkins Item Page, Dashboard > New Item**
+
+9. Create Jenkins Job
+	Dashboard > New Item 
+		-- Enter an Item Name
+		-- Select Multibranch Pipeline
+
+	Job Configuration
+		-- Display Name: Enter Name
+		-- Branch Source: GitHub
+		-- Repository HTTPS: Paste HTTPS Repo URL
+			-- Save
+
+10. Run the Job
+	Scroll to the bottom of the page, in the Build Executor Status:
+		-- Select ">> master"
+		-- Wait and Watch the progess of your intial job running
+
+11. Once Job Successfuly deploys, go to the Control Server to and run
+	```bash
+	kubectl get pods
+	```
+12. Then open a browser to Node Public IP
+
+**Congradulaiton** 
+	If you were able to complete the steps above then you've succefully completed a CI/CD pipline. With the configuations above anytime commits are published to your GitHub Repo - Jenkins will automate the deployment. 
+
+	Please Continue if you would like to implement futher options to improve this CI/CD deployment. Note: below shows how to implete and test said option. To fully incorporate it into your CI/CD deployment ensure your docker and yml files are configured accordingly. 
+
+**Features and Options Check**
+
+1. Self Healing Kubernetes Pods
+	a. Manual Testing
+		-- On the Control Server:
+			```bash
+			kubectl get pods
+			```	
+			```bash
+			kubectl exec <Enter Pod Name> -- pkill
+			```
+		-- If you run-run "kubectl get pods" you should see the restart count go up. This is due Kubernetes self healing option. 
+
+	b. Liveness Probs, Allows Kubernetes to fix pod before serious issues arrise.
+		-- First Manually download the Repo on to your Control Server
+		-- Then run: 
+		```bash
+		kubectl apply -f self-healing-option.yml
+		```
+		-- Wait for Deployement to complete 
+		```bash
+		kubectl get pods -w
+		```
+		-- Test the Liveness Prob
+			-- Open Browser to Node Public IP on Port 8080 / break
+			```bash
+			http://PublicIP:8080/break
+			```
+			-- Wait a few second then delete "/break"
+			-- Then go back to the Control Server and run:  
+					```bash
+					kubectl get pods -w
+					```
+			-- You should see the pods have Auto-Restarted
+
+2. Auto Scaling (Horizantol)
+	a. On the Control Server, Copy the metric yml file:
+		```bash
+		curl -LO https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+		```
+	b. Modify the component and add hostNetowrk: true & kubelet-insecure-tls, **Under Spec**
+		```bash
+		kubectl apply -f components.yaml
+		```
+	c. Wait for the new service to run
+		```bash
+		kubectl get pods -n kube-system -w
+		```
+	d. Apply Auto-Scaling Pods from Copied Repo
+		```bash
+		kubectl apply -f autoscaling-option.yml
+		```
+	e. Test Scaling, Must open two ssh session to run cmds and see results. 
+		-- Session 1:
+			-- Run The following:
+			```bash
+			kubectl run -i --tty load-generator --image=busybox /bin/sh
+			```
+			**Note Enter you private IP of the Node**
+			```bash
+			while true; do wget -q -O- http://<kubernetes node private ip>:8080/generate-cpu-load; done
+			```
+		-- Session 2: 
+			-- Run The following: 
+			```bash
+			kubectl get hpa -w
+			```
+			**After awhile you should see the number of replicas increase. Once you terminate the busy box in session 1, Kubenetes will reduce the number of replicas.**
 
 
-## Contact
 
-Should you wish to get in touch, feel free to reach out to me through GitHub or via [email](mailto:esolace88@gmail.com).
 
-Enjoy exploring these Azure projects, and happy cloud computing!
+
+
+
+
