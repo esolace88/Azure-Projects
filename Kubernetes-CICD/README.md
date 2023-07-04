@@ -194,7 +194,7 @@ Please Continue if you would like to implement further options to improve this C
 **Features and Options Check**
 
 1. Self-Healing Kubernetes Pods
-	a. Manual Testing
+**Manual Testing**
 *	-- On the Control Server:
 		```bash
 		kubectl get pods
@@ -204,7 +204,7 @@ Please Continue if you would like to implement further options to improve this C
 		```
 *	-- If you run-run "kubectl get pods" you should see the restart count go up. This is due to Kubernetes' self-healing option. 
 
-	b. Liveness Probs, Allows Kubernetes to fix pod before serious issues arise.
+**Liveness Probs**: Allows Kubernetes to fix pod before serious issues arise
 *	-- First Manually download the Repo onto your Control Server
 *	-- Then run: 
 		```bash
