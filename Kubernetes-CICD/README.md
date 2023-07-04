@@ -132,19 +132,19 @@ The additional options that I will be covering are the following:
 **Under the Jenkins System Page, Manage Jenkins > System**
 
 6. Input VM-Control Server Public IP and Jenkins "Name" variable
-	Manage Jenkins > System > Global Properties > Environment variables 
-*		--Name: prod_ip
-*		--Value: public IP
+*	Manage Jenkins > System > Global Properties > Environment variables 
+*	--Name: prod_ip
+*	--Value: public IP
 
 7. Add GitHub Server & Secret Key, Add and Select Newly created Key
 *	Manage Jenkins > System > GitHub Server
-*		Name: GitHub
-*		Credentials: Add > Jenkins 
-*			Kind: Secret Text
-*			Secret: Paste GitHub Token
-*			ID: github_key
-*			Description: Enter a Description
-		**Ensure you Select "Manage hooks"**
+*	Name: GitHub
+*	Credentials: Add > Jenkins 
+*	Kind: Secret Text
+*	Secret: Paste GitHub Token
+*	ID: github_key
+*	Description: Enter a Description
+**Ensure you Select "Manage hooks"**
 
 	To Create Secret Key (Personal Access Tokens)
 *		Github > Account "Settings" > Developer Settings > Personal Access Tokens > Generate New Token (Classic)
