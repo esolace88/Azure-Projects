@@ -237,7 +237,7 @@ Please Continue if you would like to implement further options to improve this C
 
 
 	b. Modify the component and add hostNetwork: true & kubelet-insecure-tls, **Under Spec**
-	![alt text](https://github.com/esolace88/Azure-Projects/tree/main/Kubernetes-CICD/img/edits.png)
+	![alt text](https://github.com/esolace88/Azure-Projects/blob/main/Kubernetes-CICD/img/edits.png)
 		```bash
 		kubectl apply -f components.yaml
 		```
