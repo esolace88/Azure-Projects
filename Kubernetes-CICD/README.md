@@ -235,18 +235,22 @@ Please Continue if you would like to implement further options to improve this C
 		curl -LO https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 		```
 
+
 	b. Modify the component and add hostNetwork: true & kubelet-insecure-tls, **Under Spec**
 		```bash
 		kubectl apply -f components.yaml
 		```
+
 	c. Wait for the new service to run
 		```bash
 		kubectl get pods -n kube-system -w
 		```
+
 	d. Apply Auto-Scaling Pods from Copied Repo
 		```bash
 		kubectl apply -f autoscaling-option.yml
 		```
+
 	e. Test Scaling, Must open two ssh sessions to run cmd and see results. 
 *	-- Session 1:
 *	-- Run The following:
