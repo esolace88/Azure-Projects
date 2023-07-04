@@ -1,17 +1,17 @@
 # Kubernetes CI/CD Projects
 
-Welcome to my Kubernetes CI/CD Project! This projects' focuse is to build a full CI/CD enviroment leveraging Jenkins and Kubeneste to automate deployments. 
+Welcome to my Kubernetes CI/CD Project! This project's focus is to build a full CI/CD environment leveraging Jenkins and Kubernetes to automate deployments. 
 
 ## Getting Started
 
-To get started, you will need a GitHub account, Docker Account, and Azure account. In this demo we will be rapidly be deploying applications via Jenkins, Docker, and Kubernetes. 
+To get started, you will need a GitHub account, Docker Account, and Azure account. In this demo, we will be rapidly deploying applications via Jenkins, Docker, and Kubernetes. 
 
-**Note:** I've while this project was created in a Azure enviroment. It can easily be replicated in a AWS, simple update the cloud-init files to conform to AWS standars. 
+**Note:** I've while this project was created in an Azure environment. It can easily be replicated in AWS, simply update the cloud-init files to conform to AWS standards. 
 
 -------------
 
 ## INFO 
-The Enviroment utilzed in this project is as follows: 
+The environment utilized in this project is as follows: 
 
 	-- Servers Type: Ubuntu 20.04 Focal Fossa LTS
 	-- K8s Network Engine: Calico
@@ -23,7 +23,7 @@ The Enviroment utilzed in this project is as follows:
 	-- Containers: Docker
 	-- Orchestration: Kubernetes
 
-The additional Options that I will be covering are the following:
+The additional options that I will be covering are the following:
 
 	-- Self-Healing
 	-- Auto Scaling
@@ -35,11 +35,11 @@ The additional Options that I will be covering are the following:
 1. Login into Azure
 2. Open Azure Terminal
 3. Create Jenkins and Kube init files
-4. Create "Resource-Group" Variable
+4. Create a "Resource-Group" Variable
       ```bash
            $RG = az group list --query "[0].name" -o tsv
       ```
-5. Create 3 VM instance, 1-Jenkins Server & 2-Kube Servers (Control & Node). **Note** in the cmd below ensure you replace the fields with your password and file name. 
+5. Create 3 VM instances, 1-Jenkins Server & 2-Kube Servers (Control & Node). **Note** In the cmd below ensure you replace the fields with your password and file name. 
       ```bash
            az vm create --resource-group $RG --name [VM-Jenkins|VM-Control|VM-Node] `
            --image Canonical:0001-com-ubuntu-server-focal:20_04-lts:latest `
@@ -56,7 +56,7 @@ The additional Options that I will be covering are the following:
 	az vm list-ip-addresses -o table
 	```
 
-**Kubernestes Configuration**
+**Kubernetes Configuration**
 
 **On All Server ENABLE the Services**
 ```bash
@@ -64,7 +64,7 @@ The additional Options that I will be covering are the following:
 ```
 
 **On Control Server**
-1. Add Current User to Docker group or Create a Deployment User and restart docker service
+1. Add a Current User to the Docker group or Create a Deployment User and restart Docker service
 	```bash
 	sudo usermod -aG docker $USER
 	sudo systemctl restart docker
@@ -80,7 +80,7 @@ The additional Options that I will be covering are the following:
   		  extraArgs:
     	    service-node-port-range: 8000-31274
       ```
-3. Intiate the Kubeadm
+3. Initiate the Kubeadm
 	```bash
 	sudo kubeadm init --config kube-config.yml
 	```
@@ -113,13 +113,13 @@ The additional Options that I will be covering are the following:
 
 **Jenkins Configuration**
 
-1. Add Jenkins user to Docker group and restart both docker and jenkins
+1. Add Jenkins user to Docker group and restart both Docker and Jenkins
 	```bash
 	sudo usermod -aG docker jenkins
 	sudo systemctl restart docker && sudo systemctl restart jenkins
 	```
-2. Open a Browser to the servers public ip on port 8080, ex (http:public.ip:8080)
-3. Navigate to the inital password location and paste it within the browser
+2. Open a Browser to the server's public IP on port 8080, ex (http:public.ip:8080)
+3. Navigate to the initial password location and paste it into the browser
 	```bash
 	sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 	```
@@ -133,34 +133,34 @@ The additional Options that I will be covering are the following:
 
 6. Input VM-Control Server Public IP and Jenkins "Name" variable
 	Manage Jenkins > System > Global Properties > Environment variables 
-		--Name: prod_ip
-		--Value: public IP
+*		--Name: prod_ip
+*		--Value: public IP
 
 7. Add GitHub Server & Secret Key, Add and Select Newly created Key
-	Mange Jenkins > System > GitHub Server
-		Name: GitHub
-		Credetials: Add > Jenkins 
-			Kind: Secret Text
-			Secret: Paste GitHub Token
-			ID: github_key
-			Description: Enter a Description
+*	Manage Jenkins > System > GitHub Server
+*		Name: GitHub
+*		Credentials: Add > Jenkins 
+*			Kind: Secret Text
+*			Secret: Paste GitHub Token
+*			ID: github_key
+*			Description: Enter a Description
 		**Ensure you Select "Manage hooks"**
 
-	To Create Secrect Key (Personal Access Tokens)
-		Github > Account "Settings" > Developer Settings > Personal Access Tokens > Generate New Token (Classic)
-			-- Name the Token
-			-- Select "admin:repo_hook"
-				-- Generate token
-				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
+	To Create Secret Key (Personal Access Tokens)
+*		Github > Account "Settings" > Developer Settings > Personal Access Tokens > Generate New Token (Classic)
+*			-- Name the Token
+*			-- Select "admin:repo_hook"
+*				-- Generate token
+
 
 **Under the Jenkins Credentials Page, Manage Jenkins > Credentials**
 
 8. Create Credentials for your Control Server and Docker Account
-	Manage Jenkins > Cendentials > (global) > Add Credentials
-		-- Kind: Username with password
-		-- Username: enter username
-		-- Password: enter password
-		-- ID: webserver_login | docker_hub_login
+*	Manage Jenkins > Credentials > (global) > Add Credentials
+*		-- Kind: Username with password
+*		-- Username: enter a username
+*		-- Password: enter the password
+*		-- ID: webserver_login | docker_hub_login
 
 **Deployment Testing**
 **Under the Jenkins Item Page, Dashboard > New Item**
