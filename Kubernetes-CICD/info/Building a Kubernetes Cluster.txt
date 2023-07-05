@@ -1,0 +1,314 @@
+# Building a Kubernetes Cluster
+# Lesson URL: https://learn.acloud.guru/course/introduction-to-kubernetes/learn/9c48bcf2-2573-485f-8906-6977bed23fc0/10592c01-d22c-4620-bace-28de4de4cf4b/watch
+
+# Relevant Documentation
+
+- Installing kubeadm: https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
+- Creating a cluster with kubeadm: https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/
+- Install Docker: https://docs.docker.com/engine/install/ubuntu/
+
+# Lesson Reference
+
+# If you are using cloud playground, create three servers with the following settings:
+
+- Distribution: Ubuntu 20.04 Focal Fossa LTS
+- Size: medium
+
+# If you wish, you can set an appropriate hostname for each node.
+
+# On the control plane node:
+	sudo hostnamectl set-hostname k8s-control
+
+# On the first worker node:
+	sudo hostnamectl set-hostname k8s-worker1
+
+# On the second worker node:
+	sudo hostnamectl set-hostname k8s-worker2
+
+# On all nodes, set up the hosts file to enable all the nodes to reach each other using these hostnames
+	sudo vi /etc/hosts
+
+# On all nodes, add the following at the end of the file. You will need to supply the actual private IP address for each node
+	<control plane node private IP> k8s-control
+	<worker node 1 private IP> k8s-worker1
+	<worker node 2 private IP> k8s-worker2
+--------
+** Log out of all three servers and log back in to see these changes take effect **
+--------
+	** Setting Enviromental Paramaters **
+--------
+
+# On all nodes, set up Docker Engine and containerd. You will need to load some kernel modules and modify some system settings as part of this
+process
+
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+overlay
+br_netfilter
+EOF
+
+	sudo modprobe overlay
+	sudo modprobe br_netfilter
+
+# sysctl params required by setup, params persist across reboots
+
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-iptables  = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward                 = 1
+EOF
+
+# Apply sysctl params without reboot
+
+	sudo sysctl --system
+
+--------
+	** Installing Docker **
+--------
+
+# Set up the Docker Engine repository
+
+	sudo apt-get update && sudo apt-get install -y ca-certificates curl gnupg
+
+# Add Docker’s official GPG key
+
+	sudo install -m 0755 -d /etc/apt/keyrings
+	curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+	sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+# Set up the repository
+
+echo \
+  "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Update the apt package index
+
+	sudo apt-get update
+
+#To install a specific version of Docker Engine, start by listing the available versions in the repository:
+	apt-cache madison docker-ce | awk '{ print $3 }'
+
+# Install Docker Engine, containerd, and Docker Compose
+
+	cat /etc/os-release
+
+	VERSION_STRING=<input version>	Example= 5:23.0.1-1~ubuntu.20.04~focal  5:23.0.1-1~ubuntu.22.04~jammy
+	sudo apt-get install -y docker-ce=$VERSION_STRING docker-ce-cli=$VERSION_STRING containerd.io docker-buildx-plugin docker-compose-plugin
+
+--------
+	** Prep for Kube Install && Additional Server Changes **
+--------
+
+# Add your 'cloud_user' to the docker group
+
+sudo usermod -aG docker $USER
+
+# Log out and log back in so that your group membership is re-evaluated
+
+# Make sure that 'disabled_plugins' is commented out in your config.toml file
+
+	sudo sed -i 's/disabled_plugins/#disabled_plugins/' /etc/containerd/config.toml
+
+# Restart containerd
+
+sudo systemctl restart containerd
+
+# On all nodes, disable swap.
+
+sudo swapoff -a
+
+--------
+	** Installing kubeadm **
+--------
+
+# Install Packages 
+
+sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl
+
+# Download the Google Cloud Public Key
+
+curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+
+# Add Kubernetest apt Repository
+
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+# Update, Install kubelet, kubeadm, kubectl and pin version
+
+sudo apt-get update && sudo apt-get install -y kubelet=1.24.0-00 kubeadm=1.24.0-00 kubectl=1.24.0-00
+sudo apt-mark hold kubelet kubeadm kubectl
+
+--------
+** START HERE IF CLOUDINIT USED ** ** Configs for the Control Plane Server ** 
+--------
+OR WITH Config File [http://www.thinkcode.se/blog/2019/02/20/kubernetes-service-node-port-range]
+
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
+networking:
+  podSubnet: "10.244.0.0/24"
+kubernetesVersion: "v1.24.0"
+apiServer:
+  extraArgs:
+    service-node-port-range: 8000-31274
+
+
+	sudo kubeadm init --config kube-config.yml
+
+-------------
+
+# On the control plane node only, initialize the cluster and set up kubectl access
+	kubectl version --short
+	sudo kubeadm init --pod-network-cidr 192.168.0.0/16 --kubernetes-version 1.24.0
+	sudo kubeadm init --pod-network-cidr 10.244.0.0/16 --kubernetes-version 1.24.0
+
+--------------
+
+# Make Working Directory
+
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+# Verify the cluster is working
+
+kubectl get nodes
+
+# Install the Calico network add-on
+	
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml
+		 https://raw.githubusercontent.com/projectcalico/calico/master/manifests/calico.yaml
+
+# Get the join command (this command is also printed during kubeadm init . Feel free to simply copy it from there)
+
+kubeadm token create --print-join-command
+
+--------
+	** Configs for Worker Node Server **
+--------
+
+# Copy the join command from the control plane node. Run it on each worker node as root (i.e. with sudo )
+
+sudo kubeadm join ...
+
+--------
+	** Verify on Control Server **
+--------
+
+# On the control plane node, verify all nodes in your cluster are ready. Note that it may take a few moments for all of the nodes to
+enter the READY state
+
+kubectl get nodes
+
+
+--------
+	Kube Options
+--------
+# Self Healing
+
+Manual Testing
+	kubectl get pods
+	kubectl exec train-schedule-deployment-758b5b9cd5-gkj6p -- pkill
+
+Creating Liveness Probs
+	Use the self-healing-option.yml, then type /break after the url
+		Use "kubectl get pods -w" to see K8S restart the pod
+
+
+# Auto Scaling 
+- https://www.linuxtechi.com/how-to-install-kubernetes-metrics-server/
+- https://signoz.io/blog/kubernetes-metrics-server/
+- https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+- https://github.com/kubernetes-sigs/metrics-server/
+
+	curl -LO https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+		vi components.yaml
+			hostNetwork: true
+			- --kubelet-insecure-tls
+	kubectl apply -f components.yaml
+	kubectl get pods -n kube-system
+
+	# Testing Auto Scaling
+	** Copy Github repo and apply auto yml file **
+	kubectl run -i --tty load-generator --image=busybox /bin/sh
+	while true; do wget -q -O- http://<kubernetes node private ip>:8080/generate-cpu-load; done
+	
+	# On Control Server
+	kubectl get pods -w 
+	kubectl get hpa -w
+	
+
+Auto-Scaling Troublshoot:
+	kubectl get apiservices | grep metrics
+	sudo cat /etc/kubernetes/manifests/kube-apiserver.yaml
+	kubectl edit deployments.apps -n kube-system metrics-server
+		--kubelet-insecure-tls=true
+		--requestheader-client-ca-file
+
+To remove Metrics Sever 
+kubectl delete serviceaccount metrics-server -n kube-system
+kubectl delete clusterroles.rbac.authorization.k8s.io system:aggregated-metrics-reader
+kubectl delete clusterroles.rbac.authorization.k8s.io system:metrics-server
+kubectl delete rolebinding metrics-server-auth-reader -n kube-system
+kubectl delete clusterrolebinding metrics-server:system:auth-delegator
+kubectl delete clusterrolebinding system:metrics-server 
+kubectl delete service/metrics-server -n  kube-system
+kubectl delete deployment.apps/metrics-server  -n  kube-system
+kubectl delete apiservices.apiregistration.k8s.io v1beta1.metrics.k8s.io
+
+
+
+
+# Monitoring Option -- NOT DOING | SEPERATE HOW TO **
+- https://github.com/helm/helm
+- https://helm.sh/docs/intro/install/
+- https://k21academy.com/docker-kubernetes/prometheus-grafana-monitoring/
+         
+	curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+	sudo apt-get install apt-transport-https --yes
+	echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+	sudo apt-get update
+	sudo apt-get install helm
+
+
+
+-------------------
+---TroubleShoot----
+sudo ufw status verbose #ubuntu
+sudo ufw disable #ubuntu
+
+
+The Kubeconfig environmental variable is probably not set.
+	export KUBECONFIG=/etc/kubernetes/admin.conf or $HOME/.kube/config
+
+The user’s $HOME directory has no .kube/config file.
+If you don’t have a .kube or config file
+	mkdir -p $HOME/.kube
+	sudo cp -i /etc/kubernetes/admin.conf HOME/.kube/config sudo chown (id -u):$(id -g) $HOME/.kube/config
+Alternatively you can also export KUBECONFIG variable like this:
+	export KUBECONFIG=$HOME/.kube/config
+
+The server/port configured in the config file above is wrong.
+Is it the same as the IP/hostname of the master server? if not did you copy it? You might
+want to fix that.
+
+By the way you can get the hostname by issueing the hostname command on your cli. or
+ifconfig for the ip.
+
+Kubelet service may be down. This may be due to the fact that swap is enabled.
+	sudo swapoff -a
+To make it permanent go to /etc/fstab
+	sudo -i
+	swapoff -a
+	exit
+	strace -eopenat kubectl version
+	sudo systemctl restart kubelet.service
+Docker service may be down, hence the kubeapi pod isn’t running
+	sudo systemctl start docker
+	sudo systemctl start kubelet
+	mkdir -p $HOME/.kube
+	sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+
+
+[WARNING SystemVerification]: missing optional cgroups: blkio

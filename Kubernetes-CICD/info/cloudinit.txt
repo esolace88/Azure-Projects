@@ -1,0 +1,166 @@
+---- INFO ----
+
+az vm list-ip-addresses
+output: {all: '| tee -a /var/log/cloud-init-output.log'}
+az vm image list -f CentOS
+az vm list-sizes --location eastus2 --output table
+az vm image list -p canonical -o table --all | grep 20_04-lts | grep -v gen2
+Canonical:0001-com-ubuntu-server-focal:20_04-lts:latest
+--size Standard_D2s_v3 
+	sudo lsof -i -P -n | grep LISTEN
+	sudo kill $(sudo lsof -t -i:8080)
+sudo adduser vivek
+sudo usermod -aG docker $USER
+
+---- 
+Jenkins  
+	Install Docker Pipeline Plugin
+----
+
+#cloud-config
+package_upgrade: true
+runcmd:
+  - echo "[INFO] Installing java, git, unzip, gradle, ca-certs, curl, gnup, sshpass"
+  - sudo apt install openjdk-11-jre git unzip -y && sudo snap install gradle --classic
+  - sudo apt-get install ca-certificates curl gnupg sshpass -y
+  - echo "[INFO] Adding Docker & Jenkins Repository"
+  - sudo install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg > /dev/null
+  - sudo chmod a+r /etc/apt/keyrings/docker.gpg
+  - echo "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+  - echo 'deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/' | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+  - echo "[INFO] Installing Docker & Jenkins"
+  - VERSION_STRING=5:23.0.1-1~ubuntu.20.04~focal
+  - sudo apt-get update && sudo apt-get install docker-ce=$VERSION_STRING docker-ce-cli=$VERSION_STRING containerd.io docker-buildx-plugin docker-compose-plugin jenkins -y
+  - echo "[INFO] Done!!"
+
+
+---- 
+Docker, and Kubenetes Install for [ubuntu.20.04~focal]
+----
+
+#cloud-config
+package_upgrade: true
+runcmd:
+  - echo "[INFO] Installing java, git, unzip, gradle, ca-certs, curl, gnup, sshpass apt-transport-https"
+  - sudo apt install openjdk-11-jre git unzip -y && sudo snap install gradle --classic
+  - sudo apt-get install ca-certificates curl gnupg sshpass apt-transport-https -y
+  - echo "[INFO] Adding Docker & Kubernetes Repository"
+  - sudo install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg > /dev/null
+  - sudo chmod a+r /etc/apt/keyrings/docker.gpg
+  - echo "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+  - echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
+  - echo "[INFO] Docker and K8s Enviroment set up"
+  - cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+  - overlay
+  - br_netfilter
+  - EOF
+  - sudo modprobe overlay && sudo modprobe br_netfilter
+  - cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+  - net.bridge.bridge-nf-call-iptables  = 1
+  - net.bridge.bridge-nf-call-ip6tables = 1
+  - net.ipv4.ip_forward                 = 1
+  - EOF
+  - sudo sysctl --system
+  - echo "[INFO] Installing Docker"
+  - VERSION_STRING=5:23.0.1-1~ubuntu.20.04~focal
+  - sudo apt-get update && sudo apt-get install docker-ce=$VERSION_STRING docker-ce-cli=$VERSION_STRING containerd.io docker-buildx-plugin docker-compose-plugin -y
+  - echo "[INFO] Kube Config Requirements"
+  - sudo sed -i 's/disabled_plugins/#disabled_plugins/' /etc/containerd/config.toml
+  - sudo systemctl restart containerd
+  - sudo swapoff -a
+  - echo "[INFO] Installing Kubeadm"
+  - sudo apt-get update && sudo apt-get install -y kubelet=1.24.0-00 kubeadm=1.24.0-00 kubectl=1.24.0-00
+  - sudo apt-mark hold kubelet kubeadm kubectl
+  - echo "[INFO] Done!!"
+
+
+----
+Kube Config File
+----
+	-- kubeadm init --config kube-config.yml
+
+# kubeadm-config.yaml
+kind: ClusterConfiguration
+apiVersion: kubeadm.k8s.io/v1beta3
+kubernetesVersion: v1.24.0
+networking:
+  podSubnet: 10.244.0.0/16
+apiServer:
+  extraArgs:
+    service-node-port-range: 8000-31274
+---
+kind: KubeletConfiguration
+apiVersion: kubelet.config.k8s.io/v1beta1
+cgroupDriver: systemd
+
+	-- kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+
+
+---- 
+Docker, Jenkins, and Kubenetes Install for [5:23.0.1-1~ubuntu.22.04~jammy]
+	** Doesn't work but keep for historical CMDs **
+----
+
+#cloud-config
+package_upgrade: true
+runcmd:
+  - echo "[INFO] Installing java, git, unzip, gradle, ca-certs, curl, gnup, sshpass"
+  - sudo apt install openjdk-11-jre git unzip -y && sudo snap install gradle --classic
+  - sudo apt-get install ca-certificates curl gnupg sshpass apt-transport-https -y
+  - echo "[INFO] Adding Docker, Jenkins, & Kubernetes Repository"
+  - curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+  - echo 'deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/' | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+  - sudo install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg > /dev/null
+  - sudo chmod a+r /etc/apt/keyrings/docker.gpg
+  - echo "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+  - echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
+  - echo "[INFO] Docker and K8s Enviroment set up"
+  - cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+  - overlay
+  - br_netfilter
+  - EOF
+  - sudo modprobe overlay && sudo modprobe br_netfilter
+  - cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+  - net.bridge.bridge-nf-call-iptables  = 1
+  - net.bridge.bridge-nf-call-ip6tables = 1
+  - net.ipv4.ip_forward                 = 1
+  - EOF
+  - sudo sysctl --system
+  - echo "[INFO] Installing Docker and Jenkins"
+  - VERSION_STRING=5:23.0.1-1~ubuntu.22.04~jammy
+  - sudo apt-get update && sudo apt-get install jenkins docker-ce=$VERSION_STRING docker-ce-cli=$VERSION_STRING containerd.io docker-buildx-plugin docker-compose-plugin -y
+  - echo "[INFO] Kube Config Requirements"
+  - sudo sed -i 's/disabled_plugins/#disabled_plugins/' /etc/containerd/config.toml
+  - sudo systemctl restart containerd
+  - sudo swapoff -a
+  - echo "[INFO] Installing Kubeadm"
+  - sudo apt-get update && sudo apt-get install -y kubelet=1.24.0-00 kubeadm=1.24.0-00 kubectl=1.24.0-00
+  - sudo apt-mark hold kubelet kubeadm kubectl
+
+
+
+----
+Docker & Jenkins Install
+----
+
+#cloud-config
+package_upgrade: true
+runcmd:
+  - sudo apt install openjdk-11-jre git unzip -y && sudo snap install gradle --classic
+  - sudo apt-get install ca-certificates curl gnupg sshpass -y
+  - curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+  - echo 'deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/' | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+  - sudo install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg > /dev/null
+  - sudo chmod a+r /etc/apt/keyrings/docker.gpg
+  - echo "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - sudo apt-get update && sudo apt-get install jenkins docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+
+------
