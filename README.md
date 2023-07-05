@@ -10,6 +10,8 @@ At present, this repository focuses on two key areas of Azure:
 
 2. **Terraform:** This part is dedicated to projects utilizing Terraform with Azure. Terraform is a popular open-source Infrastructure as Code (IaC) tool that provides a consistent CLI workflow for managing cloud service. It's used for creating, managing, and updating infrastructure resources such as virtual machines, network switches, containers, and more.
 
+3. **Kubernetes CI/CD:** This project provides a step-by-step guide for setting up a continuous integration and continuous deployment (CI/CD) pipeline for a Kubernetes application on Azure. The actual application code for this project can be found in a separate repository: [AzureProjects-Kubernetes-CICD](https://github.com/esolace88/AzureProjects-Kubernetes-CICD.git).
+
 Each project resides in its respective folder and includes a detailed README file explaining the specifics of the project, including the problem statement, approach, and results.
 
 ## Getting Started
